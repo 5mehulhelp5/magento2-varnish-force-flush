@@ -1,0 +1,49 @@
+{
+    "name": "nx6/varnish-force-flush",
+    "description": "Magento 2 module that adds a one-click \"force flush\" for the Varnish full page cache to the admin — on the Cache Management page and next to the Varnish system config — issuing a PURGE with X-Magento-Tags-Pattern: .*",
+    "type": "magento2-module",
+    "license": "MIT",
+    "keywords": [
+        "magento",
+        "magento2",
+        "magento-module",
+        "varnish",
+        "cache",
+        "full-page-cache",
+        "purge",
+        "admin"
+    ],
+    "homepage": "https://github.com/tinchodev/magento2-varnish-force-flush",
+    "support": {
+        "issues": "https://github.com/tinchodev/magento2-varnish-force-flush/issues",
+        "source": "https://github.com/tinchodev/magento2-varnish-force-flush"
+    },
+    "authors": [
+        {
+            "name": "Martin",
+            "email": "amartin.c137@gmail.com",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": "^8.3",
+        "magento/framework": ">=103.0",
+        "magento/module-backend": ">=102.0",
+        "magento/module-page-cache": ">=101.2",
+        "magento/module-config": ">=101.2"
+    },
+    "autoload": {
+        "files": [
+            "registration.php"
+        ],
+        "psr-4": {
+            "Nx6\\VarnishPurge\\": ""
+        }
+    },
+    "archive": {
+        "exclude": [
+            "/.github",
+            "/README.md"
+        ]
+    }
+}

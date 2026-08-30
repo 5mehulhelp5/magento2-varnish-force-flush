@@ -3,10 +3,10 @@ declare(strict_types=1);
 
 namespace Nx6\VarnishPurge\Controller\Adminhtml\Varnish;
 
-use Nx6\VarnishPurge\Model\VarnishPurger;
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
 use Magento\Framework\Controller\Result\JsonFactory;
+use Nx6\VarnishPurge\Model\VarnishPurger;
 
 class Purge extends Action
 {
@@ -23,11 +23,11 @@ class Purge extends Action
     #[\Override]
     public function execute()
     {
-        $result = $this->varnishPurger->purge();
+        $varnishPurgeResult = $this->varnishPurger->purge();
 
         return $this->jsonFactory->create()->setData([
-            'success' => $result->success,
-            'message' => $result->message,
+            'success' => $varnishPurgeResult->success,
+            'message' => $varnishPurgeResult->message,
         ]);
     }
 }

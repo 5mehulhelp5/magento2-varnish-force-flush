@@ -3,12 +3,12 @@ declare(strict_types=1);
 
 namespace Nx6\VarnishPurge\Controller\Adminhtml\Cache;
 
-use Nx6\VarnishPurge\Model\VarnishPurger;
 use Magento\Backend\App\Action;
 use Magento\Backend\App\Action\Context;
 use Magento\Backend\Model\View\Result\Redirect;
 use Magento\Framework\App\Action\HttpGetActionInterface;
 use Magento\Framework\Controller\ResultFactory;
+use Nx6\VarnishPurge\Model\VarnishPurger;
 
 class Purge extends Action implements HttpGetActionInterface
 {
@@ -24,12 +24,12 @@ class Purge extends Action implements HttpGetActionInterface
     #[\Override]
     public function execute()
     {
-        $result = $this->varnishPurger->purge();
+        $varnishPurgeResult = $this->varnishPurger->purge();
 
-        if ($result->success) {
-            $this->messageManager->addSuccessMessage($result->message);
+        if ($varnishPurgeResult->success) {
+            $this->messageManager->addSuccessMessage($varnishPurgeResult->message);
         } else {
-            $this->messageManager->addErrorMessage($result->message);
+            $this->messageManager->addErrorMessage($varnishPurgeResult->message);
         }
 
         /** @var Redirect $resultRedirect */

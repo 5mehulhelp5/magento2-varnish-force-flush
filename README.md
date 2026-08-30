@@ -1,84 +1,95 @@
 # Nx6_VarnishPurge
 
-Magento 2 module that adds a manual "force flush" action for Varnish full
-page cache, exposed in two places in the admin panel:
+[![Magento 2](https://img.shields.io/badge/Magento-2.4-f46f25.svg?style=flat-square)](https://magento.com/)
+[![PHP 8.3+](https://img.shields.io/badge/PHP-8.3%2B-777bb4.svg?style=flat-square)](https://www.php.net/)
+[![Rector](https://img.shields.io/badge/Rector-enabled-8a2be2.svg?style=flat-square)](https://github.com/rectorphp/rector)
+[![PHP-CS-Fixer](https://img.shields.io/badge/code%20style-PHP--CS--Fixer-46a2f1.svg?style=flat-square)](https://github.com/PHP-CS-Fixer/PHP-CS-Fixer)
+[![License](https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square)](./LICENSE)
 
-- **Stores > Configuration > Advanced > System > Full Page Cache**, as a
-  "Force Purge" button next to the Varnish settings.
-- **System > Tools > Cache Management**, as a "Force Varnish Flush" button
-  placed right after "Flush JavaScript/CSS Cache". This button only appears
-  when Varnish is the configured caching application
-  (`system/full_page_cache/caching_application` = Varnish) and the current
-  admin user has permission for it.
+Magento 2 module that adds a manual **"force flush"** action for the Varnish full
+page cache to the admin panel — for the times when Magento's own cache
+invalidation isn't enough and you need to blow away the entire Varnish cache
+right now.
 
-Both buttons trigger the same purge operation: an HTTP `PURGE` request sent
-to the configured Varnish backend host/port
-(`system/full_page_cache/varnish/backend_host` and `backend_port`) with an
-`X-Magento-Tags-Pattern: .*` header, which tells Varnish to discard its
-entire cache. The request/response is logged for troubleshooting.
-
-## How it works
-
-- `Model/VarnishPurger.php` contains the actual purge logic (the cURL
-  `PURGE` request) and is shared by both entry points below.
-- `Controller/Adminhtml/Varnish/Purge.php` handles the config-page button:
-  it's called via AJAX (`fetch`) and returns a JSON `{success, message}`
-  response, rendered inline next to the button
-  (`view/adminhtml/templates/system/config/purge_button.phtml`,
-  `Block/Adminhtml/System/Config/PurgeButton.php`).
-- `Controller/Adminhtml/Cache/Purge.php` handles the Cache Management page
-  button: it's a plain GET action that performs the purge, sets a
-  success/error admin notice via the message manager, and redirects back to
-  the Cache Management page — matching the behavior of Magento's own cache
-  flush buttons.
-- `Block/Adminhtml/Cache/Additional.php` extends Magento's core
-  `Magento\Backend\Block\Cache\Additional` block to add the Varnish
-  visibility/ACL checks and purge URL used by the overridden
-  `view/adminhtml/templates/system/cache/additional.phtml` template (swapped
-  in via `view/adminhtml/layout/adminhtml_cache_index.xml`, no core files
-  are modified).
-- Access to both buttons is gated by the `Nx6_VarnishPurge::varnish_purge`
-  ACL resource (`etc/acl.xml`).
+| | |
+|---|---|
+| Package | `nx6/varnish-force-flush` |
+| Module | `Nx6_VarnishPurge` |
+| Version | `0.1.0` |
 
 ## Installation
 
-Copy the `Nx6/VarnishPurge` directory into your Magento installation's
-`app/code/` directory, then run:
-
-```
+```bash
+composer require nx6/varnish-force-flush
 bin/magento module:enable Nx6_VarnishPurge
 bin/magento setup:upgrade
+bin/magento setup:di:compile        # production mode only
+bin/magento cache:flush
 ```
 
-Configure the Varnish backend host/port under **Stores > Configuration >
-Advanced > System > Full Page Cache** (standard Magento Varnish settings)
-before using either purge button.
+Configure the Varnish backend host/port under **Stores › Configuration ›
+Advanced › System › Full Page Cache** (the standard Magento Varnish settings)
+before using either button.
+
+## Where the buttons appear
+
+- **Stores › Configuration › Advanced › System › Full Page Cache** — a
+  **Force Purge** button next to the Varnish settings. Runs over AJAX and shows a
+  JSON `{success, message}` result inline.
+- **System › Tools › Cache Management** — a **Force Varnish Flush** button right
+  after *Flush JavaScript/CSS Cache*. It only shows when Varnish is the configured
+  caching application (`system/full_page_cache/caching_application` = Varnish) and
+  the admin user holds the ACL. Behaves like Magento's own flush buttons: performs
+  the purge, sets a success/error notice, redirects back.
+
+## How it works
+
+Both buttons call the same operation: an HTTP `PURGE` request to the configured
+Varnish backend (`system/full_page_cache/varnish/backend_host` /
+`backend_port`) carrying `X-Magento-Tags-Pattern: .*`, which tells Varnish to
+discard its **entire** cache. The request and response are logged for
+troubleshooting.
+
+| File | Role |
+|---|---|
+| `Model/VarnishPurger.php` | The purge itself (the cURL `PURGE` request); shared by both entry points. |
+| `Model/VarnishPurgeResult.php` | Immutable `{success, message}` value object. |
+| `Controller/Adminhtml/Varnish/Purge.php` | Config-page button — AJAX, returns JSON. |
+| `Controller/Adminhtml/Cache/Purge.php` | Cache Management button — GET action, admin notice + redirect. |
+| `Block/Adminhtml/Cache/Additional.php` | Extends core `Magento\Backend\Block\Cache\Additional` to add the Varnish visibility / ACL checks. No core files are modified — the template is swapped via layout XML. |
+| `etc/acl.xml` | `Nx6_VarnishPurge::varnish_purge` gates both buttons. |
+
+## Compatibility
+
+Magento 2.4.x, PHP 8.3+. Requires Varnish configured as the full page cache
+application.
 
 ## Structure
 
 ```
-Nx6/VarnishPurge/
-├── Block/
-│   └── Adminhtml/
-│       ├── Cache/Additional.php           # Extends core cache management block
-│       └── System/Config/PurgeButton.php  # Config-page button block
-├── Controller/
-│   └── Adminhtml/
-│       ├── Cache/Purge.php                # Cache Management page action (redirect)
-│       └── Varnish/Purge.php              # Config-page action (AJAX/JSON)
+.
+├── Block/Adminhtml/
+│   ├── Cache/Additional.php
+│   └── System/Config/PurgeButton.php
+├── Controller/Adminhtml/
+│   ├── Cache/Purge.php
+│   └── Varnish/Purge.php
 ├── Model/
-│   ├── VarnishPurger.php                  # Shared purge logic
-│   └── VarnishPurgeResult.php             # Purge outcome value object
+│   ├── VarnishPurger.php
+│   └── VarnishPurgeResult.php
 ├── etc/
 │   ├── acl.xml
-│   ├── adminhtml/
-│   │   ├── routes.xml
-│   │   └── system.xml
+│   ├── adminhtml/{routes.xml,system.xml}
 │   └── module.xml
 ├── view/adminhtml/
-│   ├── layout/adminhtml_cache_index.xml   # Overrides core cache.additional block
-│   └── templates/
-│       ├── system/cache/additional.phtml
-│       └── system/config/purge_button.phtml
-└── registration.php
+│   ├── layout/adminhtml_cache_index.xml
+│   └── templates/system/{cache/additional.phtml,config/purge_button.phtml}
+├── registration.php
+├── composer.json
+├── LICENSE
+└── README.md
 ```
+
+## License
+
+MIT — see [LICENSE](./LICENSE).
